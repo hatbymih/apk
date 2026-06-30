@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="google-site-verification" content="cas1Wesgy9Ozt6VueSKIYdZtp3dKtM_hBZnszSaWgzU" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>iPhone Pro Calculator - PEMDAS Compliant</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            touch-action: none;
+        }
+
+        body {
+            background-color: #000000;
+            height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .kalkulator {
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px);
+        }
+
+        .display-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            padding: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #history {
+            color: #888;
+            font-size: 1.8rem;
+            min-height: 2.2rem;
+            text-align: right;
+            font-weight: 500;
+            white-space: nowrap;
+            width: 100%;
+            opacity: 0;
+            transform-origin: right bottom;
+            transition: opacity 0.2s ease;
+            word-spacing: 0.4rem; 
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            touch-action: pan-x;
+            -webkit-overflow-scrolling: touch;
+        }
+        #history::-webkit-scrollbar { display: none; }
+
+        #history.show { opacity: 1; }
+
+        #layar {
+            color: white;
+            font-size: 5.5rem;
+            text-align: right;
+            width: 100%;
+            white-space: nowrap;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            display: block;
+            direction: ltr;
+            transform-origin: right bottom;
+            outline: none;
+            user-select: text;
+            touch-action: pan-x;
+            -webkit-overflow-scrolling: touch;
+            word-spacing: 0.6rem;
+            letter-spacing: 0.02rem;
+            caret-color: #FF9F0A; 
+            font-weight: 500;
+        }
+        
+        #layar::-webkit-scrollbar { display: none; }
+
+        .history-anim {
+            animation: moveUpHistory 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        @keyframes moveUpHistory {
+            0% { transform: translateY(60px) scale(2.5); opacity: 1; color: white; }
+            100% { transform: translateY(0) scale(1); opacity: 1; color: #888; }
+        }
+
+        .result-anim {
+            animation: zoomInResult 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        @keyframes zoomInResult {
+            0% { transform: scale(0.3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .grid-tombol {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            aspect-ratio: 1 / 1;
+            border: none;
+            border-radius: 50%;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.1s, transform 0.05s;
+        }
+
+        button.is-pressed { 
+            filter: brightness(1.5); 
+            transform: scale(0.92); 
+        }
+
+        .btn-abu-tua { background-color: #333333; color: white; }
+        .btn-abu-muda { background-color: #505050; color: white; }
+        .btn-fungsi-atas { background-color: #505050; color: white; }
+        .btn-oranye { background-color: #FF9F0A; color: white; font-size: 2.4rem; }
+        .op-aktif { background-color: white !important; color: #FF9F0A !important; }
+
+        .backspace-icon { width: 32px; height: 32px; fill: none; stroke: currentColor; stroke-width: 1.5; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="kalkulator">
+        <div class="display-container">
+            <div id="history"></div>
+            <div id="layar" contenteditable="true" inputmode="none" spellcheck="false"></div>
+        </div>
+        
+        <div class="grid-tombol">
+            <button class="btn-fungsi-atas" data-action="backspace">
+                <svg class="backspace-icon" viewBox="0 0 24 24"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path><line x1="18" y1="9" x2="12" y2="15"></line><line x1="12" y1="9" x2="18" y2="15"></line></svg>
+            </button>
+            <button class="btn-fungsi-atas" id="btn-ac" data-action="clear">AC</button>
+            <button class="btn-fungsi-atas" data-action="persen">%</button>
+            <button class="btn-oranye operator" id="op-div" data-action="operator" data-val="/">÷</button>
+
+            <button class="btn-abu-tua" data-action="input" data-val="7">7</button>
+            <button class="btn-abu-tua" data-action="input" data-val="8">8</button>
+            <button class="btn-abu-tua" data-action="input" data-val="9">9</button>
+            <button class="btn-oranye operator" id="op-mul" data-action="operator" data-val="*">×</button>
+
+            <button class="btn-abu-tua" data-action="input" data-val="4">4</button>
+            <button class="btn-abu-tua" data-action="input" data-val="5">5</button>
+            <button class="btn-abu-tua" data-action="input" data-val="6">6</button>
+            <button class="btn-oranye operator" id="op-sub" data-action="operator" data-val="-">−</button>
+
+            <button class="btn-abu-tua" data-action="input" data-val="1">1</button>
+            <button class="btn-abu-tua" data-action="input" data-val="2">2</button>
+            <button class="btn-abu-tua" data-action="input" data-val="3">3</button>
+            <button class="btn-oranye operator" id="op-add" data-action="operator" data-val="+">+</button>
+
+            <button class="btn-abu-tua" data-action="toggleMinus">+/-</button>
+            <button class="btn-abu-tua" data-action="input" data-val="0">0</button>
+            <button class="btn-abu-tua" data-action="input" data-val=",">,</button>
+            <button class="btn-oranye" data-action="hitung">=</button>
+        </div>
+    </div>
+
+    <script>
+        const layar = document.getElementById('layar');
+        const historyEl = document.getElementById('history');
+        const btnAC = document.getElementById('btn-ac');
+        
+        let currentInput = ""; 
+        let expression = "";
+        let lastExpressionBeforeResult = ""; 
+        let isFinalResult = false;
+        let isEditingDirectly = false;
+
+        let backspaceTimeout = null;
+        let backspaceInterval = null;
+        let isLongPressingBackspace = false; 
+
+        function formatNumber(numStr) {
+            if (!numStr || numStr === "Error" || numStr === "-") return numStr;
+            let parts = numStr.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return parts.length > 1 ? parts[0] + ',' + parts[1] : parts[0];
+        }
+
+        function formatExpression(exp) {
+            return exp.replace(/(\d+(\.\d+)?)/g, (match) => formatNumber(match))
+                      .replace(/\*/g, '×')
+                      .replace(/\//g, '÷')
+                      .replace(/\+/g, '+')
+                      .replace(/\-/g, '−');
+        }
+
+        function setCursorToEnd() {
+            if (isEditingDirectly) return; 
+            layar.focus();
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(layar);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        function insertAtCursor(char) {
+            layar.focus();
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                
+                if (layar.childNodes.length === 0) {
+                    layar.appendChild(document.createTextNode(""));
+                }
+                
+                let offset = range.startOffset;
+                let textNode = range.startContainer;
+
+                if (textNode === layar) {
+                    textNode = layar.firstChild;
+                    offset = textNode.textContent.length;
+                }
+
+                let text = textNode.textContent;
+                let newText = text.slice(0, offset) + char + text.slice(offset);
+                textNode.textContent = newText;
+
+                const newOffset = offset + char.length;
+                range.setStart(textNode, newOffset);
+                range.setEnd(textNode, newOffset);
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                parseAndSyncEditedText(false); 
+                adjustFontSize();
+                btnAC.innerText = "C";
+            }
+        }
+
+        function updateDisplay() {
+            if (isEditingDirectly) {
+                adjustFontSize();
+                btnAC.innerText = layar.innerText.trim() !== "" ? "C" : "AC";
+                return;
+            }
+
+            let visualCurrent = formatNumber(currentInput);
+            let visualExp = formatExpression(expression);
+            let displayContent = visualExp + visualCurrent;
+
+            layar.innerHTML = displayContent;
+            adjustFontSize();
+            
+            layar.scrollLeft = layar.scrollWidth;
+            historyEl.scrollLeft = historyEl.scrollWidth;
+
+            btnAC.innerText = (currentInput !== "" || expression !== "") ? "C" : "AC";
+
+            if (isLongPressingBackspace) {
+                resetOperatorHighlight();
+                return; 
+            }
+
+            if (currentInput === "-") {
+                highlightOperator('-');
+            } else if (expression !== "" && currentInput === "") {
+                highlightOperator(expression.slice(-1));
+            } else {
+                resetOperatorHighlight();
+            }
+        }
+
+        function adjustFontSize() {
+            let maxFontSize = 5.5; 
+            let minFontSize = 1.8; 
+            layar.style.fontSize = maxFontSize + "rem";
+            
+            while (layar.scrollWidth > layar.clientWidth && maxFontSize > minFontSize) {
+                maxFontSize -= 0.2;
+                if (maxFontSize < minFontSize) maxFontSize = minFontSize;
+                layar.style.fontSize = maxFontSize + "rem";
+            }
+        }
+
+        layar.addEventListener('blur', () => {
+            parseAndSyncEditedText(true); 
+        });
+
+        layar.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                layar.blur();
+            }
+        });
+
+        layar.addEventListener('input', () => {
+            parseAndSyncEditedText(false);
+            adjustFontSize();
+            btnAC.innerText = layar.innerText.trim() !== "" ? "C" : "AC";
+            layar.scrollLeft = layar.scrollWidth;
+        });
+
+        function parseAndSyncEditedText(triggerUpdateDisplay = true) {
+            let rawText = layar.innerText.trim();
+            
+            rawText = rawText.replace(/[\s\u200B]/g, '')
+                             .replace(/×/g, '*')
+                             .replace(/÷/g, '/')
+                             .replace(/−/g, '-');
+
+            rawText = rawText.replace(/\.(?=\d{3}(?!\d))/g, '');
+            rawText = rawText.replace(/,/g, '.');
+
+            rawText = rawText.replace(/([\+\-\*\/])[\+\-\*\/]+/g, '$1');
+
+            const match = rawText.match(/^(.*?)(\d+(?:\.\d+)?%?|-?)$/);
+            
+            if (match) {
+                expression = match[1];
+                currentInput = match[2];
+                if (currentInput.endsWith('.')) {
+                    currentInput = currentInput.slice(0, -1);
+                }
+            } else {
+                expression = "";
+                currentInput = rawText;
+            }
+
+            if (triggerUpdateDisplay) {
+                isFinalResult = false;
+                layar.style.caretColor = '#FF9F0A'; 
+                isEditingDirectly = false;
+                updateDisplay();
+            }
+        }
+
+        function handleInput(digit) {
+            if (isFinalResult) handleClear();
+
+            if (isEditingDirectly) {
+                let displayDigit = digit === ',' ? ',' : digit;
+                insertAtCursor(displayDigit);
+                return;
+            }
+
+            if (digit === '0' && currentInput === '0') return;
+            if (digit === ',') {
+                if (currentInput === "" || currentInput === "-") currentInput += "0.";
+                else if (!currentInput.includes('.')) currentInput += ".";
+            } else {
+                if (currentInput === "0") currentInput = digit;
+                else currentInput += digit;
+            }
+            updateDisplay();
+            setCursorToEnd();
+        }
+
+        function handleOperator(op) {
+            if (isFinalResult) {
+                let res = currentInput;
+                handleClear();
+                currentInput = res;
+            }
+
+            if (isEditingDirectly) {
+                const opMap = {'+': '+', '-': '−', '*': '×', '/': '÷'};
+                insertAtCursor(opMap[op]);
+                return;
+            }
+
+            if (currentInput.endsWith('.')) {
+                currentInput = currentInput.slice(0, -1);
+            }
+
+            if (currentInput === "" || currentInput === "-") {
+                if (expression !== "") {
+                    expression = expression.slice(0, -1) + op;
+                    currentInput = ""; 
+                }
+                updateDisplay();
+                setCursorToEnd();
+                return;
+            }
+
+            expression += currentInput + op;
+            currentInput = "";
+            updateDisplay();
+            setCursorToEnd();
+        }
+
+        function handlePersen() {
+            if (isEditingDirectly) {
+                insertAtCursor('%');
+                return;
+            }
+            if (currentInput === "" || currentInput === "-") return;
+            if (!currentInput.includes('%')) {
+                currentInput += "%";
+                updateDisplay();
+                setCursorToEnd();
+            }
+        }
+
+        function handleHitung() {
+            if (isEditingDirectly) parseAndSyncEditedText(true);
+            if (isFinalResult || (expression === "" && currentInput !== "-")) return;
+            let finalExpression = expression + currentInput;
+            if (/[\+\-\*\/]$/.test(finalExpression) || finalExpression === "-") return;
+
+            lastExpressionBeforeResult = finalExpression;
+
+            try {
+                let evalExp = finalExpression;
+                evalExp = evalExp.replace(/(\d+(?:\.\d+)?)%?([\+\-])(\d+(?:\.\d+)?)%/g, "($1$2($1*$3/100))");
+                evalExp = evalExp.replace(/(\d+(?:\.\d+)?)%/g, "($1/100)");
+                
+                let result = new Function('return ' + evalExp)();
+                
+                historyEl.innerText = formatExpression(finalExpression);
+                historyEl.classList.remove('history-anim', 'show');
+                layar.classList.remove('result-anim');
+                void historyEl.offsetWidth; 
+                historyEl.classList.add('history-anim', 'show');
+                layar.classList.add('result-anim');
+
+                if (Math.abs(result) < 1e-10) result = 0;
+                let resultStr = Number.isInteger(result) ? result.toString() : parseFloat(result.toFixed(10)).toString();
+                
+                currentInput = resultStr;
+                expression = "";
+                isFinalResult = true;
+                
+                layar.style.caretColor = 'transparent'; 
+                updateDisplay();
+            } catch (e) { currentInput = "Error"; updateDisplay(); }
+        }
+
+        function handleClear() {
+            isEditingDirectly = false; 
+            currentInput = "";
+            expression = "";
+            lastExpressionBeforeResult = ""; 
+            isFinalResult = false;
+            
+            layar.style.caretColor = '#FF9F0A'; 
+            layar.innerText = ""; 
+            historyEl.innerText = "";
+            historyEl.classList.remove('show', 'history-anim');
+            layar.classList.remove('result-anim');
+            updateDisplay();
+            setCursorToEnd(); // Memastikan kursor kembali aktif setelah clear
+        }
+
+        function handleBackspace() {
+            if (isEditingDirectly) {
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    let offset = range.startOffset; 
+                    const textNode = range.startContainer;
+
+                    if (textNode.nodeType === Node.TEXT_NODE) {
+                        let text = textNode.textContent;
+                        if (offset > 0) {
+                            let newText = text.slice(0, offset - 1) + text.slice(offset);
+                            textNode.textContent = newText;
+                            
+                            range.setStart(textNode, offset - 1);
+                            range.setEnd(textNode, offset - 1);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            
+                            parseAndSyncEditedText(false); 
+                            adjustFontSize();
+                            btnAC.innerText = newText.trim() !== "" ? "C" : "AC";
+                        }
+                    }
+                }
+                return;
+            }
+
+            if (isFinalResult && lastExpressionBeforeResult !== "") {
+                let fullExp = lastExpressionBeforeResult;
+                let match = fullExp.match(/^(.*?)(\d+(\.\d+)?%?)$/);
+                if (match) {
+                    expression = match[1];
+                    currentInput = match[2];
+                } else {
+                    currentInput = fullExp;
+                    expression = "";
+                }
+                isFinalResult = false;
+                layar.style.caretColor = '#FF9F0A'; 
+                lastExpressionBeforeResult = "";
+                historyEl.innerText = "";
+                historyEl.classList.remove('show', 'history-anim');
+                layar.classList.remove('result-anim');
+                updateDisplay();
+                setCursorToEnd();
+                return;
+            }
+
+            if (currentInput.length > 0) {
+                currentInput = currentInput.slice(0, -1);
+            } else if (expression.length > 0) {
+                expression = expression.slice(0, -1);
+                let match = expression.match(/(\d+(\.\d+)?%?)$/);
+                if (match) {
+                    currentInput = match[0];
+                    expression = expression.slice(0, -match[0].length);
+                }
+            }
+            updateDisplay();
+            setCursorToEnd();
+        }
+
+        function stopBackspaceRepetition() {
+            if (backspaceTimeout) { clearTimeout(backspaceTimeout); backspaceTimeout = null; }
+            if (backspaceInterval) { clearInterval(backspaceInterval); backspaceInterval = null; }
+            
+            if (isLongPressingBackspace) {
+                isLongPressingBackspace = false;
+                if (currentInput === "-") {
+                    highlightOperator('-');
+                } else if (expression !== "" && currentInput === "") {
+                    highlightOperator(expression.slice(-1));
+                } else {
+                    resetOperatorHighlight();
+                }
+            }
+        }
+
+        function handleToggleMinus() {
+            if (isFinalResult) return;
+            
+            if (isEditingDirectly) {
+                parseAndSyncEditedText(false);
+                if (currentInput === "" || currentInput === "0") return;
+                
+                if (currentInput.startsWith("-")) currentInput = currentInput.slice(1);
+                else currentInput = "-" + currentInput;
+                
+                let visualCurrent = formatNumber(currentInput);
+                let visualExp = formatExpression(expression);
+                layar.innerText = visualExp + visualCurrent;
+                return;
+            }
+
+            if (currentInput === "" || currentInput === "-" || currentInput === "0") return;
+
+            if (currentInput.startsWith("-")) currentInput = currentInput.slice(1);
+            else currentInput = "-" + currentInput;
+            updateDisplay();
+            setCursorToEnd();
+        }
+
+        function highlightOperator(op) {
+            resetOperatorHighlight();
+            const idMap = {'+': 'op-add', '-': 'op-sub', '*': 'op-mul', '/': 'op-div'};
+            if (idMap[op]) document.getElementById(idMap[op]).classList.add('op-aktif');
+        }
+
+        function resetOperatorHighlight() {
+            document.querySelectorAll('.operator').forEach(el => el.classList.remove('op-aktif'));
+        }
+
+        const buttons = document.querySelectorAll('button');
+        const activeTouches = new Map();
+
+        buttons.forEach(btn => {
+            btn.addEventListener('pointerdown', (e) => {
+                if (e.target === layar || e.target === historyEl) return;
+                
+                e.preventDefault();
+                btn.releasePointerCapture(e.pointerId);
+                btn.classList.add('is-pressed');
+                activeTouches.set(e.pointerId, btn);
+                
+                const action = btn.getAttribute('data-action');
+                const val = btn.getAttribute('data-val');
+
+                if (action === 'input') handleInput(val);
+                else if (action === 'operator') handleOperator(val);
+                else if (action === 'clear') handleClear();
+                else if (action === 'backspace') {
+                    handleBackspace();
+                    stopBackspaceRepetition();
+                    
+                    backspaceTimeout = setTimeout(() => {
+                        isLongPressingBackspace = true; 
+                        resetOperatorHighlight(); 
+                        backspaceInterval = setInterval(() => {
+                            handleBackspace();
+                        }, 80);
+                    }, 500);
+                }
+                else if (action === 'persen') handlePersen();
+                else if (action === 'toggleMinus') handleToggleMinus();
+                else if (action === 'hitung') handleHitung();
+            });
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            const btn = activeTouches.get(e.pointerId);
+            if (btn) {
+                btn.classList.remove('is-pressed');
+                activeTouches.delete(e.pointerId);
+                if (btn.getAttribute('data-action') === 'backspace') {
+                    stopBackspaceRepetition();
+                }
+            }
+        });
+
+        window.addEventListener('pointercancel', (e) => {
+            stopBackspaceRepetition();
+        });
+
+        layar.addEventListener('pointerdown', (e) => {
+            if (isFinalResult) {
+                e.preventDefault(); 
+                return; 
+            }
+            isEditingDirectly = true;
+            layar.style.caretColor = '#FF9F0A'; 
+        });
+
+        const resizeObserver = new ResizeObserver(() => adjustFontSize());
+        resizeObserver.observe(layar);
+
+        // Menjalankan fungsi inisialisasi awal saat dokumen selesai dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            updateDisplay();
+            setCursorToEnd();
+        });
+    </script>
+</body>
+</html>
