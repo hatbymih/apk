@@ -476,7 +476,7 @@
             historyEl.classList.remove('show', 'history-anim');
             layar.classList.remove('result-anim');
             updateDisplay();
-            setCursorToEnd(); // Memastikan kursor kembali aktif setelah clear
+            setCursorToEnd(); 
         }
 
         function handleBackspace() {
@@ -531,7 +531,7 @@
             if (currentInput.length > 0) {
                 currentInput = currentInput.slice(0, -1);
             } else if (expression.length > 0) {
-                expression = expression.slice(0, -1);
+                expression = expression.slice(0, -1) + '';
                 let match = expression.match(/(\d+(\.\d+)?%?)$/);
                 if (match) {
                     currentInput = match[0];
@@ -643,6 +643,7 @@
             stopBackspaceRepetition();
         });
 
+        // BAGIAN PERBAIKAN: Mencegah keyboard muncul secara total namun mempertahankan fitur tap kursor / seleksi
         layar.addEventListener('pointerdown', (e) => {
             if (isFinalResult) {
                 e.preventDefault(); 
@@ -652,10 +653,26 @@
             layar.style.caretColor = '#FF9F0A'; 
         });
 
+        // Cegah aksi default pada 'touchstart' khusus untuk elemen layar agar OS mobile tidak memicu keyboard bawaan
+        layar.addEventListener('touchstart', (e) => {
+            if (isFinalResult) {
+                e.preventDefault();
+                return;
+            }
+            // Biarkan browser memproses penempatan kursor, tetapi cegah sistem keyboard bawaan mendeteksi fokus input standar.
+            // Kombinasi inputmode="none" dan penanganan seleksi di bawah akan melindunginya.
+        }, { passive: true });
+
+        // Paksa keyboard untuk langsung sembunyi jika sistem browser entah bagaimana mencoba memunculkannya saat fokus aktif
+        layar.addEventListener('focus', (e) => {
+            if ('virtualKeyboard' in navigator) {
+                navigator.virtualKeyboard.hide(); // Sembunyikan jika didukung browser Chromium modern
+            }
+        });
+
         const resizeObserver = new ResizeObserver(() => adjustFontSize());
         resizeObserver.observe(layar);
 
-        // Menjalankan fungsi inisialisasi awal saat dokumen selesai dimuat
         window.addEventListener('DOMContentLoaded', () => {
             updateDisplay();
             setCursorToEnd();
