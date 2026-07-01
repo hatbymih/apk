@@ -88,17 +88,16 @@
             overflow-x: auto;
             overflow-y: hidden;
             scrollbar-width: none;
-            display: block;
+            display: inline-block;
             direction: ltr;
             transform-origin: right bottom;
             outline: none;
-            user-select: text;
             touch-action: pan-x;
             -webkit-overflow-scrolling: touch;
             word-spacing: 0.6rem;
             letter-spacing: 0.02rem;
-            caret-color: #FF9F0A; 
             font-weight: 500;
+            position: relative;
         }
         
         #layar::-webkit-scrollbar { display: none; }
@@ -157,7 +156,8 @@
     <div class="kalkulator">
         <div class="display-container">
             <div id="history"></div>
-            <div id="layar" contenteditable="true" inputmode="none" spellcheck="false"></div>
+            <!-- Div murni tanpa kursor dan tanpa contenteditable -->
+            <div id="layar"></div>
         </div>
         
         <div class="grid-tombol">
@@ -199,7 +199,6 @@
         let expression = "";
         let lastExpressionBeforeResult = ""; 
         let isFinalResult = false;
-        let isEditingDirectly = false;
 
         let backspaceTimeout = null;
         let backspaceInterval = null;
@@ -220,58 +219,7 @@
                       .replace(/\-/g, '−');
         }
 
-        function setCursorToEnd() {
-            if (isEditingDirectly) return; 
-            layar.focus();
-            const selection = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(layar);
-            range.collapse(false);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-
-        function insertAtCursor(char) {
-            layar.focus();
-            const selection = window.getSelection();
-            if (selection.rangeCount > 0) {
-                const range = selection.getRangeAt(0);
-                
-                if (layar.childNodes.length === 0) {
-                    layar.appendChild(document.createTextNode(""));
-                }
-                
-                let offset = range.startOffset;
-                let textNode = range.startContainer;
-
-                if (textNode === layar) {
-                    textNode = layar.firstChild;
-                    offset = textNode.textContent.length;
-                }
-
-                let text = textNode.textContent;
-                let newText = text.slice(0, offset) + char + text.slice(offset);
-                textNode.textContent = newText;
-
-                const newOffset = offset + char.length;
-                range.setStart(textNode, newOffset);
-                range.setEnd(textNode, newOffset);
-                selection.removeAllRanges();
-                selection.addRange(range);
-
-                parseAndSyncEditedText(false); 
-                adjustFontSize();
-                btnAC.innerText = "C";
-            }
-        }
-
         function updateDisplay() {
-            if (isEditingDirectly) {
-                adjustFontSize();
-                btnAC.innerText = layar.innerText.trim() !== "" ? "C" : "AC";
-                return;
-            }
-
             let visualCurrent = formatNumber(currentInput);
             let visualExp = formatExpression(expression);
             let displayContent = visualExp + visualCurrent;
@@ -310,66 +258,8 @@
             }
         }
 
-        layar.addEventListener('blur', () => {
-            parseAndSyncEditedText(true); 
-        });
-
-        layar.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                layar.blur();
-            }
-        });
-
-        layar.addEventListener('input', () => {
-            parseAndSyncEditedText(false);
-            adjustFontSize();
-            btnAC.innerText = layar.innerText.trim() !== "" ? "C" : "AC";
-            layar.scrollLeft = layar.scrollWidth;
-        });
-
-        function parseAndSyncEditedText(triggerUpdateDisplay = true) {
-            let rawText = layar.innerText.trim();
-            
-            rawText = rawText.replace(/[\s\u200B]/g, '')
-                             .replace(/×/g, '*')
-                             .replace(/÷/g, '/')
-                             .replace(/−/g, '-');
-
-            rawText = rawText.replace(/\.(?=\d{3}(?!\d))/g, '');
-            rawText = rawText.replace(/,/g, '.');
-
-            rawText = rawText.replace(/([\+\-\*\/])[\+\-\*\/]+/g, '$1');
-
-            const match = rawText.match(/^(.*?)(\d+(?:\.\d+)?%?|-?)$/);
-            
-            if (match) {
-                expression = match[1];
-                currentInput = match[2];
-                if (currentInput.endsWith('.')) {
-                    currentInput = currentInput.slice(0, -1);
-                }
-            } else {
-                expression = "";
-                currentInput = rawText;
-            }
-
-            if (triggerUpdateDisplay) {
-                isFinalResult = false;
-                layar.style.caretColor = '#FF9F0A'; 
-                isEditingDirectly = false;
-                updateDisplay();
-            }
-        }
-
         function handleInput(digit) {
             if (isFinalResult) handleClear();
-
-            if (isEditingDirectly) {
-                let displayDigit = digit === ',' ? ',' : digit;
-                insertAtCursor(displayDigit);
-                return;
-            }
 
             if (digit === '0' && currentInput === '0') return;
             if (digit === ',') {
@@ -380,7 +270,6 @@
                 else currentInput += digit;
             }
             updateDisplay();
-            setCursorToEnd();
         }
 
         function handleOperator(op) {
@@ -388,12 +277,6 @@
                 let res = currentInput;
                 handleClear();
                 currentInput = res;
-            }
-
-            if (isEditingDirectly) {
-                const opMap = {'+': '+', '-': '−', '*': '×', '/': '÷'};
-                insertAtCursor(opMap[op]);
-                return;
             }
 
             if (currentInput.endsWith('.')) {
@@ -406,31 +289,24 @@
                     currentInput = ""; 
                 }
                 updateDisplay();
-                setCursorToEnd();
                 return;
             }
 
             expression += currentInput + op;
             currentInput = "";
             updateDisplay();
-            setCursorToEnd();
         }
 
         function handlePersen() {
-            if (isEditingDirectly) {
-                insertAtCursor('%');
-                return;
-            }
+            if (isFinalResult) return;
             if (currentInput === "" || currentInput === "-") return;
             if (!currentInput.includes('%')) {
                 currentInput += "%";
                 updateDisplay();
-                setCursorToEnd();
             }
         }
 
         function handleHitung() {
-            if (isEditingDirectly) parseAndSyncEditedText(true);
             if (isFinalResult || (expression === "" && currentInput !== "-")) return;
             let finalExpression = expression + currentInput;
             if (/[\+\-\*\/]$/.test(finalExpression) || finalExpression === "-") return;
@@ -458,55 +334,24 @@
                 expression = "";
                 isFinalResult = true;
                 
-                layar.style.caretColor = 'transparent'; 
                 updateDisplay();
             } catch (e) { currentInput = "Error"; updateDisplay(); }
         }
 
         function handleClear() {
-            isEditingDirectly = false; 
             currentInput = "";
             expression = "";
             lastExpressionBeforeResult = ""; 
             isFinalResult = false;
             
-            layar.style.caretColor = '#FF9F0A'; 
             layar.innerText = ""; 
             historyEl.innerText = "";
             historyEl.classList.remove('show', 'history-anim');
             layar.classList.remove('result-anim');
             updateDisplay();
-            setCursorToEnd(); 
         }
 
         function handleBackspace() {
-            if (isEditingDirectly) {
-                const selection = window.getSelection();
-                if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    let offset = range.startOffset; 
-                    const textNode = range.startContainer;
-
-                    if (textNode.nodeType === Node.TEXT_NODE) {
-                        let text = textNode.textContent;
-                        if (offset > 0) {
-                            let newText = text.slice(0, offset - 1) + text.slice(offset);
-                            textNode.textContent = newText;
-                            
-                            range.setStart(textNode, offset - 1);
-                            range.setEnd(textNode, offset - 1);
-                            selection.removeAllRanges();
-                            selection.addRange(range);
-                            
-                            parseAndSyncEditedText(false); 
-                            adjustFontSize();
-                            btnAC.innerText = newText.trim() !== "" ? "C" : "AC";
-                        }
-                    }
-                }
-                return;
-            }
-
             if (isFinalResult && lastExpressionBeforeResult !== "") {
                 let fullExp = lastExpressionBeforeResult;
                 let match = fullExp.match(/^(.*?)(\d+(\.\d+)?%?)$/);
@@ -518,13 +363,11 @@
                     expression = "";
                 }
                 isFinalResult = false;
-                layar.style.caretColor = '#FF9F0A'; 
                 lastExpressionBeforeResult = "";
                 historyEl.innerText = "";
                 historyEl.classList.remove('show', 'history-anim');
                 layar.classList.remove('result-anim');
                 updateDisplay();
-                setCursorToEnd();
                 return;
             }
 
@@ -539,7 +382,6 @@
                 }
             }
             updateDisplay();
-            setCursorToEnd();
         }
 
         function stopBackspaceRepetition() {
@@ -560,26 +402,11 @@
 
         function handleToggleMinus() {
             if (isFinalResult) return;
-            
-            if (isEditingDirectly) {
-                parseAndSyncEditedText(false);
-                if (currentInput === "" || currentInput === "0") return;
-                
-                if (currentInput.startsWith("-")) currentInput = currentInput.slice(1);
-                else currentInput = "-" + currentInput;
-                
-                let visualCurrent = formatNumber(currentInput);
-                let visualExp = formatExpression(expression);
-                layar.innerText = visualExp + visualCurrent;
-                return;
-            }
-
-            if (currentInput === "" || currentInput === "-" || currentInput === "0") return;
+            if (currentInput === "" || currentInput === "-") return;
 
             if (currentInput.startsWith("-")) currentInput = currentInput.slice(1);
             else currentInput = "-" + currentInput;
             updateDisplay();
-            setCursorToEnd();
         }
 
         function highlightOperator(op) {
@@ -597,8 +424,6 @@
 
         buttons.forEach(btn => {
             btn.addEventListener('pointerdown', (e) => {
-                if (e.target === layar || e.target === historyEl) return;
-                
                 e.preventDefault();
                 btn.releasePointerCapture(e.pointerId);
                 btn.classList.add('is-pressed');
@@ -643,39 +468,13 @@
             stopBackspaceRepetition();
         });
 
-        // BAGIAN PERBAIKAN: Mencegah keyboard muncul secara total namun mempertahankan fitur tap kursor / seleksi
-        layar.addEventListener('pointerdown', (e) => {
-            if (isFinalResult) {
-                e.preventDefault(); 
-                return; 
-            }
-            isEditingDirectly = true;
-            layar.style.caretColor = '#FF9F0A'; 
-        });
-
-        // Cegah aksi default pada 'touchstart' khusus untuk elemen layar agar OS mobile tidak memicu keyboard bawaan
-        layar.addEventListener('touchstart', (e) => {
-            if (isFinalResult) {
-                e.preventDefault();
-                return;
-            }
-            // Biarkan browser memproses penempatan kursor, tetapi cegah sistem keyboard bawaan mendeteksi fokus input standar.
-            // Kombinasi inputmode="none" dan penanganan seleksi di bawah akan melindunginya.
-        }, { passive: true });
-
-        // Paksa keyboard untuk langsung sembunyi jika sistem browser entah bagaimana mencoba memunculkannya saat fokus aktif
-        layar.addEventListener('focus', (e) => {
-            if ('virtualKeyboard' in navigator) {
-                navigator.virtualKeyboard.hide(); // Sembunyikan jika didukung browser Chromium modern
-            }
-        });
+        layar.addEventListener('selectstart', (e) => e.preventDefault());
 
         const resizeObserver = new ResizeObserver(() => adjustFontSize());
         resizeObserver.observe(layar);
 
         window.addEventListener('DOMContentLoaded', () => {
             updateDisplay();
-            setCursorToEnd();
         });
     </script>
 </body>
