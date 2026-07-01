@@ -5,6 +5,9 @@
     <meta name="google-site-verification" content="cas1Wesgy9Ozt6VueSKIYdZtp3dKtM_hBZnszSaWgzU" />
     <link class="icon" type="image/png" href="https://help.apple.com/assets/67DB4A443E933AA73E0B736E/67DB4A441BBBD795C80FED6E/en_US/d7683090881be82d88efa4ac1d3aec74.png">
     <meta name="description" content="Aplikasi kalkulator iphone untuk anda dibuat oleh onck. Hitung cepat dengan mudah di sini!">
+    
+    <link rel="manifest" href='data:application/json,{"short_name":"Kalkulator","name":"Kalkulator - onck","icons":[{"src":"https://help.apple.com/assets/67DB4A443E933AA73E0B736E/67DB4A441BBBD795C80FED6E/en_US/d7683090881be82d88efa4ac1d3aec74.png","type":"image/png","sizes":"512x512","purpose":"any maskable"}],"start_url":".","background_color":"%23000000","theme_color":"%23000000","display":"standalone","orientation":"portrait"}'>
+
     <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -472,15 +475,9 @@
             stopBackspaceRepetition();
         });
 
-        // PERLINDUNGAN MUTLAK MULTI-LAYER UNTUK MEMBLOKIR KEYBOARD:
-        
-        // 1. Matikan fitur seleksi teks bawaan (mencegah kaca pembesar / menu salin otomatis Android)
         document.addEventListener('selectstart', (e) => e.preventDefault());
-        
-        // 2. Matikan menu klik kanan / tahan lama di seluruh aplikasi agar menu "Paste/Tempel" tidak memicu keyboard
         document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // 3. Jika ada input gelap atau sistem yang secara paksa memfokuskan sesuatu, paksa lepaskan fokus (blur)
         window.addEventListener('focusin', (e) => {
             if (e.target && typeof e.target.blur === 'function') {
                 e.target.blur();
@@ -489,6 +486,19 @@
 
         const resizeObserver = new ResizeObserver(() => adjustFontSize());
         resizeObserver.observe(layar);
+
+        // TRIK 2: Daftarkan Service Worker Inline tanpa file sw.js eksternal
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swCode = "self.addEventListener('fetch', (e) => { e.respondWith(fetch(e.request)); });";
+                const blob = new Blob([swCode], { type: 'text/javascript' });
+                const blobURL = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(blobURL, { scope: './' })
+                    .then(reg => console.log('Inline SW Sukses!'))
+                    .catch(err => console.log('Inline SW Gagal:', err));
+            });
+        }
 
         window.addEventListener('DOMContentLoaded', () => {
             updateDisplay();
