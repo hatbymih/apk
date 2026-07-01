@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="google-site-verification" content="cas1Wesgy9Ozt6VueSKIYdZtp3dKtM_hBZnszSaWgzU" />
-    <link rel="icon" type="image/png" href="https://help.apple.com/assets/67DB4A443E933AA73E0B736E/67DB4A441BBBD795C80FED6E/en_US/d7683090881be82d88efa4ac1d3aec74.png">
+    <link class="icon" type="image/png" href="https://help.apple.com/assets/67DB4A443E933AA73E0B736E/67DB4A441BBBD795C80FED6E/en_US/d7683090881be82d88efa4ac1d3aec74.png">
     <meta name="description" content="Aplikasi kalkulator iphone untuk anda dibuat oleh onck. Hitung cepat dengan mudah di sini!">
     <script type="application/ld+json">
 {
@@ -47,7 +47,8 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
-            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px);
+            /* Memberikan jarak bawah yang ideal + mengakomodasi safe-area layar berponi/notch */
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 35px);
         }
 
         .display-container {
@@ -160,7 +161,6 @@
     <div class="kalkulator">
         <div class="display-container">
             <div id="history"></div>
-            <!-- Div murni tanpa kursor, tanpa contenteditable, dan diproteksi penuh -->
             <div id="layar" tabindex="-1"></div>
         </div>
         
