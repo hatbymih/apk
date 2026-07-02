@@ -55,10 +55,9 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            padding: 16px 20px;
-            padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 20px);
+            padding: 24px;
+            padding-bottom: calc(env(safe-area-inset-bottom, 24px) + 50px);
             justify-content: flex-end;
-            box-sizing: border-box;
         }
 
         .display-container {
@@ -67,16 +66,15 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: flex-end;
-            padding: 8px 4px;
+            padding: 10px;
             overflow: hidden;
             position: relative;
-            min-height: 0; /* Mencegah flex item meluap */
         }
 
         #history {
             color: #888;
-            font-size: 1.6rem;
-            min-height: 2rem;
+            font-size: 1.8rem;
+            min-height: 2.2rem;
             text-align: right;
             font-weight: 500;
             white-space: nowrap;
@@ -97,7 +95,7 @@
 
         #layar {
             color: white;
-            font-size: 5.5rem;
+            font-size: 6rem;
             text-align: right;
             width: 100%;
             white-space: nowrap;
@@ -114,7 +112,6 @@
             letter-spacing: 0.02rem;
             font-weight: 500;
             position: relative;
-            line-height: 1.1;
         }
         
         #layar::-webkit-scrollbar { display: none; }
@@ -138,9 +135,9 @@
         .grid-tombol {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            row-gap: 12px;
-            column-gap: 12px; 
-            margin-top: 8px;
+            row-gap: 20px;
+            column-gap: 14px; 
+            margin-top: 10px;
             flex-shrink: 0;
             width: 100%;
         }
@@ -150,7 +147,7 @@
             aspect-ratio: 1 / 1; 
             border: none;
             border-radius: 50%;
-            font-size: 2rem; 
+            font-size: 2.3rem; 
             font-weight: 400;
             display: flex;
             justify-content: center;
@@ -159,52 +156,35 @@
             transition: background-color 0.1s, transform 0.05s;
         }
 
-        /* RESPONSIVITAS KHUSUS MODE POP-UP / LAYAR PENDEK */
-        @media (max-height: 620px) {
+        @media (max-height: 580px) {
             .kalkulator {
-                padding: 10px 14px;
-                padding-bottom: calc(env(safe-area-inset-bottom, 8px) + 8px); 
+                max-width: 100%;
+                padding: 10px 16px;
+                padding-bottom: calc(env(safe-area-inset-bottom, 10px) + 35px); 
             }
             .grid-tombol {
-                row-gap: 8px;
-                column-gap: 8px; 
-                margin-top: 4px;
+                row-gap: 16px;
+                column-gap: 12px; 
             }
             button {
-                font-size: 1.6rem;
+                aspect-ratio: 1 / 1; 
+                height: clamp(45px, 11dvh, 65px); 
+                width: auto;
+                margin: 0 auto;
+                font-size: 1.8rem;
             }
             .btn-oranye {
-                font-size: 2rem !important;
+                font-size: 2.2rem !important;
             }
             #layar {
-                font-size: 3.8rem;
+                font-size: 4rem;
             }
             #history {
-                font-size: 1.3rem;
-                min-height: 1.6rem;
+                font-size: 1.5rem;
             }
             .backspace-icon {
-                width: 24px !important;
-                height: 24px !important;
-            }
-        }
-
-        @media (max-height: 480px) {
-            .grid-tombol {
-                row-gap: 6px;
-                column-gap: 6px;
-            }
-            button {
-                font-size: 1.3rem;
-            }
-            .btn-oranye {
-                font-size: 1.6rem !important;
-            }
-            #layar {
-                font-size: 2.8rem;
-            }
-            #history {
-                font-size: 1.1rem;
+                width: 26px !important;
+                height: 26px !important;
             }
         }
 
@@ -216,10 +196,10 @@
         .btn-abu-tua { background-color: #333333; color: white; }
         .btn-abu-muda { background-color: #505050; color: white; }
         .btn-fungsi-atas { background-color: #505050; color: white; }
-        .btn-oranye { background-color: #FF9F0A; color: white; font-size: 2.4rem; }
+        .btn-oranye { background-color: #FF9F0A; color: white; font-size: 2.6rem; }
         .op-aktif { background-color: white !important; color: #FF9F0A !important; }
 
-        .backspace-icon { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.25; pointer-events: none; }
+        .backspace-icon { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.25; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -281,6 +261,7 @@
             return parts.length > 1 ? parts[0] + ',' + parts[1] : parts[0];
         }
 
+        // ... (Fungsi logika kalkulator tetap dipertahankan persis sama)
         function formatExpression(exp) {
             return exp.replace(/(\d+(\.\d+)?)/g, (match) => formatNumber(match))
                       .replace(/\*/g, '×')
@@ -317,8 +298,8 @@
         }
 
         function adjustFontSize() {
-            let maxFontSize = window.innerHeight <= 480 ? 2.8 : (window.innerHeight <= 620 ? 3.8 : 5.5); 
-            let minFontSize = 1.5; 
+            let maxFontSize = window.innerHeight <= 580 ? 4.0 : 6.0; 
+            let minFontSize = 1.8; 
             layar.style.fontSize = maxFontSize + "rem";
             
             while (layar.scrollWidth > layar.clientWidth && maxFontSize > minFontSize) {
@@ -550,6 +531,7 @@
         const resizeObserver = new ResizeObserver(() => adjustFontSize());
         resizeObserver.observe(layar);
 
+        // DIUBAH: Registrasi Service Worker eksternal (sw.js) asli demi kompatibilitas penuh PWA browser
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
