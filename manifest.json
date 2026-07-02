@@ -1,0 +1,17 @@
+{
+  "short_name": "Kalkulator",
+  "name": "Kalkulator - Onck",
+  "icons": [
+    {
+      "src": "https://help.apple.com/assets/67DB4A443E933AA73E0B736E/67DB4A441BBBD795C80FED6E/en_US/d7683090881be82d88efa4ac1d3aec74.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "display": "standalone",
+  "orientation": "portrait"
+}
